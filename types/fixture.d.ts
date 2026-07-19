@@ -1,0 +1,1 @@
+export { HOOKFORM_RESOLVERS as __FULL_IMPORT_FOR_FIXTURES__ } from "@hookform/resolvers";
