@@ -1,0 +1,136 @@
+# Local Supabase stack for LinkForge development.
+# Start with: docker compose up -d
+# Requires Docker Compose v2+.
+#
+# After startup, run the migration:
+#   supabase db reset
+#
+# Or apply manually:
+#   docker compose exec -T db psql -U postgres -d postgres < supabase/migrations/00001_initial_schema.sql
+
+services:
+  db:
+    image: supabase/postgres:15.6.1.107
+    container_name: linkforge-db
+    ports:
+      - "54322:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth:
+    image: supabase/gotrue:v2.164.0
+    container_name: linkforge-auth
+    ports:
+      - "9999:9999"
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      GOTRUE_SITE_URL: http://localhost:3000
+      GOTRUE_URI_ALLOW_LIST: http://localhost:3000/**
+      GOTRUE_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
+      GOTRUE_DB_MAX_POOL_SIZE: "10"
+      GOTRUE_SMTP_HOST: ""
+      GOTRUE_SMTP_PORT: "2500"
+      GOTRUE_SMTP_USER: ""
+      GOTRUE_SMTP_PASS: ""
+      GOTRUE_EXTERNAL_GITHUB_ENABLED: "false"
+      GOTRUE_EXTERNAL_GOOGLE_ENABLED: "false"
+      GOTRUE_LOG_LEVEL: debug
+    depends_on:
+      db:
+        condition: service_healthy
+
+  rest:
+    image: postgrest/postgrest:v12.2.3
+    container_name: linkforge-rest
+    ports:
+      - "3001:3000"
+    environment:
+      PGRST_DB_URI: postgres://postgres:postgres@db:5432/postgres
+      PGRST_DB_SCHEMA: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_DB_EXTRA_SEARCH_PATH: public
+      PGRST_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+    depends_on:
+      db:
+        condition: service_healthy
+
+  realtime:
+    image: supabase/realtime:v2.33.24
+    container_name: linkforge-realtime
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: postgres
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_ENC: "false"
+      JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      REPLICATION_MODE: RLS
+      REPLICATION_POLL_INTERVAL: "100"
+      SECURE_CHANNELS: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  storage:
+    image: supabase/storage-api:v1.11.3
+    container_name: linkforge-storage
+    ports:
+      - "5000:5000"
+    environment:
+      ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwV8Hdp7fsT3Uqr-iCHX0
+      PROJECT_REF: local
+      REGION: us-east-1
+      GLOBAL_S3_BUCKET: linkforge-storage
+      STORAGE_BACKEND: file
+      FILE_SIZE_LIMIT: "10485760"
+      FILE_STORAGE_BACKEND_PATH: /storage
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
+      TENANT_ID: local
+    volumes:
+      - storage-data:/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_started
+
+  kong:
+    image: kong:3.8.0
+    container_name: linkforge-kong
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_LOG_LEVEL: notice
+    volumes:
+      - ./supabase/kong.yml:/etc/kong/kong.yml
+    depends_on:
+      - auth
+      - rest
+      - realtime
+      - storage
+
+volumes:
+  pgdata:
+  storage-data:

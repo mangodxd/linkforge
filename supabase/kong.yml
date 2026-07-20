@@ -1,0 +1,32 @@
+# Kong declarative config for local Supabase gateway.
+# Routes: /auth/* -> gotrue, /rest/* -> postgrest, /realtime/* -> realtime, /storage/* -> storage-api
+_format_version: "3.0"
+
+services:
+  - name: auth-service
+    url: http://auth:9999
+    routes:
+      - name: auth
+        paths:
+          - /auth
+
+  - name: rest-service
+    url: http://rest:3000
+    routes:
+      - name: rest
+        paths:
+          - /rest
+
+  - name: realtime-service
+    url: http://realtime:4000
+    routes:
+      - name: realtime
+        paths:
+          - /realtime
+
+  - name: storage-service
+    url: http://storage:5000
+    routes:
+      - name: storage
+        paths:
+          - /storage

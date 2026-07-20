@@ -7,7 +7,7 @@ export const features = {
   ogImage: false,
   galleryBlock: true,
   videoBlock: true,
-  docker: false,
+  docker: true,
 } as const;
 
 export type FeatureFlag = keyof typeof features;
