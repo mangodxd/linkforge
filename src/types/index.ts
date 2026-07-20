@@ -111,6 +111,16 @@ export interface SocialLinksBlockContent {
   layout?: "row" | "column";
 }
 
+export interface CustomDomain {
+  id: string;
+  page_id: string;
+  domain: string;
+  verified: boolean;
+  verification_token: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type BlockContent =
   | HeaderBlockContent
   | ButtonBlockContent

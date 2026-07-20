@@ -176,6 +176,13 @@ export default function BuilderClient({ page: initialPage, blocks: initialBlocks
                 View Live
               </a>
             )}
+            <a
+              href={`/dashboard/pages/${page.id}/domains`}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 px-3"
+            >
+              <Icons.Globe className="mr-1 h-4 w-4" />
+              Domains
+            </a>
             <Button variant="outline" size="sm" onClick={() => setShowPageSettings(!showPageSettings)}>
               <Icons.Settings className="mr-1 h-4 w-4" />
               Settings
