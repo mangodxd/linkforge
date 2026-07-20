@@ -18,6 +18,7 @@ export interface Page {
   description: string | null;
   theme: string;
   published: boolean;
+  social_links: Json;
   created_at: string;
   updated_at: string;
 }
