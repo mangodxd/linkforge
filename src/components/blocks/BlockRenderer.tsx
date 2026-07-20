@@ -6,6 +6,8 @@ import { TextBlock } from "./TextBlock";
 import { ImageBlock } from "./ImageBlock";
 import { DividerBlock } from "./DividerBlock";
 import { SocialLinksBlock } from "./SocialLinksBlock";
+import { GalleryBlock } from "./GalleryBlock";
+import { VideoBlock } from "./VideoBlock";
 import type {
   HeaderBlockContent,
   ButtonBlockContent,
@@ -13,6 +15,8 @@ import type {
   ImageBlockContent,
   DividerBlockContent,
   SocialLinksBlockContent,
+  GalleryBlockContent,
+  VideoBlockContent,
 } from "@/types";
 
 interface Props {
@@ -44,6 +48,10 @@ export function BlockRenderer({ block, pageSocialLinks }: Props) {
           }
         />
       );
+    case BLOCK_TYPES.GALLERY:
+      return <GalleryBlock content={block.content as unknown as GalleryBlockContent} />;
+    case BLOCK_TYPES.VIDEO:
+      return <VideoBlock content={block.content as unknown as VideoBlockContent} />;
     default:
       return null;
   }
