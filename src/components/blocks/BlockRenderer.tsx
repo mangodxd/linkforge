@@ -21,16 +21,22 @@ import type {
 
 interface Props {
   block: Block;
-  /** Pass page social_links so the social links block can use page-level data */
   pageSocialLinks?: Page["social_links"];
+  pageId?: string;
 }
 
-export function BlockRenderer({ block, pageSocialLinks }: Props) {
+export function BlockRenderer({ block, pageSocialLinks, pageId }: Props) {
   switch (block.type) {
     case BLOCK_TYPES.HEADER:
       return <HeaderBlock content={block.content as unknown as HeaderBlockContent} />;
     case BLOCK_TYPES.BUTTON:
-      return <ButtonBlock content={block.content as unknown as ButtonBlockContent} />;
+      return (
+        <ButtonBlock
+          content={block.content as unknown as ButtonBlockContent}
+          pageId={pageId}
+          blockId={block.id}
+        />
+      );
     case BLOCK_TYPES.TEXT:
       return <TextBlock content={block.content as unknown as TextBlockContent} />;
     case BLOCK_TYPES.IMAGE:

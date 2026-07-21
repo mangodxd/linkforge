@@ -1,5 +1,4 @@
-import { redirect, notFound } from "next/navigation";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
 import { fetchPageById } from "@/services/page.service";
 import { fetchDomainsForPage } from "@/services/domain.service";
 import DomainsForm from "./DomainsForm";
@@ -10,14 +9,9 @@ interface Props {
 
 export default async function DomainsPage({ params }: Props) {
   const { id } = await params;
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
 
   const page = await fetchPageById(id);
-  if (!page || page.user_id !== user.id) notFound();
+  if (!page) notFound();
 
   const domains = await fetchDomainsForPage(id);
 

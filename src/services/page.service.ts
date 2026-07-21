@@ -1,28 +1,25 @@
-import { createClient } from "@/lib/supabase/client";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/db";
 import type { Page, Block } from "@/types";
 
-export async function fetchUserPages(userId: string): Promise<Page[]> {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
+const db = createServiceRoleClient();
+
+export async function fetchAllPages(): Promise<Page[]> {
+  const { data, error } = await db
     .from("pages")
     .select("*")
-    .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as Page[];
 }
 
 export async function fetchPageById(id: string): Promise<Page | null> {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase.from("pages").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await db.from("pages").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
   return (data as Page) ?? null;
 }
 
 export async function fetchPageBySlug(slug: string): Promise<Page | null> {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("pages")
     .select("*")
     .eq("slug", slug)
@@ -33,8 +30,7 @@ export async function fetchPageBySlug(slug: string): Promise<Page | null> {
 }
 
 export async function fetchBlocksForPage(pageId: string): Promise<Block[]> {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("blocks")
     .select("*")
     .eq("page_id", pageId)
@@ -44,14 +40,12 @@ export async function fetchBlocksForPage(pageId: string): Promise<Block[]> {
 }
 
 export async function createPage(input: {
-  user_id: string;
   title: string;
   slug: string;
   description: string | null;
   theme: string;
 }): Promise<Page> {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("pages")
     .insert({ ...input, published: false })
     .select("*")
@@ -64,8 +58,7 @@ export async function updatePage(
   id: string,
   input: Partial<Pick<Page, "title" | "slug" | "description" | "theme" | "published" | "social_links">>
 ): Promise<Page> {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("pages")
     .update({ ...input, updated_at: new Date().toISOString() })
     .eq("id", id)
@@ -76,15 +69,12 @@ export async function updatePage(
 }
 
 export async function removePage(id: string): Promise<void> {
-  const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.from("pages").delete().eq("id", id);
+  const { error } = await db.from("pages").delete().eq("id", id);
   if (error) throw error;
 }
 
-// Client-side actions for interactive forms
 export async function togglePublish(page: Page): Promise<Page> {
-  const supabase = createClient();
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("pages")
     .update({ published: !page.published, updated_at: new Date().toISOString() })
     .eq("id", page.id)
@@ -94,12 +84,10 @@ export async function togglePublish(page: Page): Promise<Page> {
   return data as Page;
 }
 
-export async function duplicatePage(page: Page, userId: string): Promise<Page> {
-  const supabase = createClient();
-  const { data, error } = await supabase
+export async function duplicatePage(page: Page): Promise<Page> {
+  const { data, error } = await db
     .from("pages")
     .insert({
-      user_id: userId,
       title: `${page.title} (copy)`,
       slug: `${page.slug}-copy`,
       description: page.description,

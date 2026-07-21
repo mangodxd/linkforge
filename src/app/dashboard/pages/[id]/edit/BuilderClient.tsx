@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import type { Page, Block, Json } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/ui/icons";
@@ -38,6 +39,7 @@ export default function BuilderClient({ page: initialPage, blocks: initialBlocks
     try {
       await removeBlock(blockId);
       setBlocks((prev) => prev.filter((b) => b.id !== blockId));
+      setEditingBlockId(null);
       addToast({ title: "Block deleted", variant: "success" });
     } catch (err) {
       addToast({
@@ -81,7 +83,10 @@ export default function BuilderClient({ page: initialPage, blocks: initialBlocks
         setBlocks((prev) => [...prev, newBlock]);
         setShowAddBlock(false);
         setEditingBlockId(newBlock.id);
-        addToast({ title: `${BLOCK_TYPE_LABELS[type as keyof typeof BLOCK_TYPE_LABELS] ?? type} block added`, variant: "success" });
+        addToast({
+          title: `${BLOCK_TYPE_LABELS[type as keyof typeof BLOCK_TYPE_LABELS] ?? type} block added`,
+          variant: "success",
+        });
       } catch (err) {
         addToast({
           title: "Add failed",
@@ -97,7 +102,9 @@ export default function BuilderClient({ page: initialPage, blocks: initialBlocks
     const jsonContent = content as Json;
     try {
       await updateBlock(blockId, { content: jsonContent });
-      setBlocks((prev) => prev.map((b) => (b.id === blockId ? { ...b, content: jsonContent } : b)));
+      setBlocks((prev) =>
+        prev.map((b) => (b.id === blockId ? { ...b, content: jsonContent } : b))
+      );
       setEditingBlockId(null);
       addToast({ title: "Block updated", variant: "success" });
     } catch (err) {
@@ -130,170 +137,223 @@ export default function BuilderClient({ page: initialPage, blocks: initialBlocks
 
   return (
     <div className="flex h-full flex-col lg:flex-row">
-      {/* Editor panel */}
-      <div className="flex-1 overflow-y-auto border-r p-4 lg:p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">{page.title}</h2>
-            {page.published ? (
-              <Badge variant="secondary">Published</Badge>
-            ) : (
-              <Badge variant="outline">Draft</Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                try {
-                  await togglePublish(page);
-                  setPage((prev) => ({ ...prev, published: !prev.published }));
-                  addToast({
-                    title: page.published ? "Page unpublished" : "Page published",
-                    variant: "success",
-                  });
-                  router.refresh();
-                } catch (err) {
-                  addToast({
-                    title: "Failed to toggle publish",
-                    description: err instanceof Error ? err.message : "Please try again",
-                    variant: "destructive",
-                  });
-                }
-              }}
-            >
-              {page.published ? "Unpublish" : "Publish"}
-            </Button>
-            {page.published && (
-              <a
-                href={`/${page.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 px-3"
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur-sm">
+          <div className="flex items-center justify-between gap-2 px-4 py-2.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <h2 className="truncate text-base font-semibold font-heading">{page.title}</h2>
+              {page.published ? (
+                <Badge variant="success">Published</Badge>
+              ) : (
+                <Badge variant="outline">Draft</Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                variant={page.published ? "outline" : "default"}
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await togglePublish(page);
+                    setPage((prev) => ({ ...prev, published: !prev.published }));
+                    addToast({
+                      title: page.published ? "Page unpublished" : "Page published",
+                      variant: "success",
+                    });
+                    router.refresh();
+                  } catch (err) {
+                    addToast({
+                      title: "Failed to toggle publish",
+                      description: err instanceof Error ? err.message : "Please try again",
+                      variant: "destructive",
+                    });
+                  }
+                }}
               >
-                <Icons.ExternalLink className="mr-1 h-4 w-4" />
-                View Live
+                {page.published ? "Unpublish" : "Publish"}
+              </Button>
+              {page.published && (
+                <a
+                  href={`/${page.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-9 items-center justify-center rounded-md px-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Icons.ExternalLink className="h-4 w-4" />
+                </a>
+              )}
+              <a
+                href={`/dashboard/pages/${page.id}/domains`}
+                className="inline-flex h-9 items-center justify-center rounded-md px-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <Icons.Globe className="h-4 w-4" />
               </a>
-            )}
-            <a
-              href={`/dashboard/pages/${page.id}/domains`}
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 px-3"
-            >
-              <Icons.Globe className="mr-1 h-4 w-4" />
-              Domains
-            </a>
-            <Button variant="outline" size="sm" onClick={() => setShowPageSettings(!showPageSettings)}>
-              <Icons.Settings className="mr-1 h-4 w-4" />
-              Settings
-            </Button>
-            <Button size="sm" onClick={() => setShowAddBlock(true)}>
-              <Icons.Plus className="mr-1 h-4 w-4" />
-              Add Block
-            </Button>
+              <a
+                href={`/dashboard/pages/${page.id}/analytics`}
+                className="inline-flex h-9 items-center justify-center rounded-md px-2.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <Icons.BarChart3 className="h-4 w-4" />
+              </a>
+              <Button variant="ghost" size="sm" onClick={() => setShowPageSettings(!showPageSettings)}>
+                <Icons.Settings className="h-4 w-4" />
+              </Button>
+              <Button size="sm" onClick={() => setShowAddBlock(true)}>
+                <Icons.Plus className="mr-1 h-4 w-4" />
+                Add Block
+              </Button>
+            </div>
           </div>
         </div>
 
-        {showPageSettings && (
-          <PageSettings
-            page={page}
-            onSave={handleSavePageSettings}
-            onCancel={() => setShowPageSettings(false)}
-            saving={saving}
-          />
-        )}
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+          {showPageSettings && (
+            <PageSettings
+              page={page}
+              onSave={handleSavePageSettings}
+              onCancel={() => setShowPageSettings(false)}
+              saving={saving}
+            />
+          )}
 
-        {blocks.length === 0 ? (
-          <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center">
-            <Icons.FileText className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">No blocks yet. Add one to get started.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {blocks.map((block, i) => (
-              <div
-                key={block.id}
-                className={cn(
-                  "rounded-lg border bg-card p-3 transition-colors",
-                  editingBlockId === block.id && "border-primary ring-1 ring-primary"
-                )}
+          <AnimatePresence mode="popLayout">
+            {blocks.length === 0 ? (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="rounded-lg border border-dashed bg-muted/30 p-12 text-center"
               >
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {BLOCK_TYPE_LABELS[block.type as keyof typeof BLOCK_TYPE_LABELS] ?? block.type}
-                  </span>
-                  <div className="flex items-center gap-0.5">
-                    {i > 0 && (
-                      <Button variant="ghost" size="sm" onClick={() => handleMoveBlock(block.id, "up")}>
-                        <Icons.ChevronUp className="h-4 w-4" />
-                      </Button>
+                <Icons.FileText className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">No blocks yet. Add one to get started.</p>
+                <Button variant="outline" className="mt-4" onClick={() => setShowAddBlock(true)}>
+                  <Icons.Plus className="mr-2 h-4 w-4" />
+                  Add your first block
+                </Button>
+              </motion.div>
+            ) : (
+              <div className="space-y-3">
+                {blocks.map((block, i) => (
+                  <motion.div
+                    key={block.id}
+                    layout
+                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                    transition={{ duration: 0.2 }}
+                    className={cn(
+                      "rounded-lg border bg-card p-3 transition-all duration-150",
+                      editingBlockId === block.id && "border-primary ring-1 ring-primary shadow-sm"
                     )}
-                    {i < blocks.length - 1 && (
-                      <Button variant="ghost" size="sm" onClick={() => handleMoveBlock(block.id, "down")}>
-                        <Icons.ChevronDown className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="sm" onClick={() => setEditingBlockId(editingBlockId === block.id ? null : block.id)}>
-                      <Icons.Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDeleteBlock(block.id)}>
-                      <Icons.Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                  >
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground font-heading">
+                        {BLOCK_TYPE_LABELS[block.type as keyof typeof BLOCK_TYPE_LABELS] ?? block.type}
+                      </span>
+                      <div className="flex items-center gap-0.5">
+                        {i > 0 && (
+                          <Button variant="ghost" size="icon-sm" onClick={() => handleMoveBlock(block.id, "up")}>
+                            <Icons.ChevronUp className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {i < blocks.length - 1 && (
+                          <Button variant="ghost" size="icon-sm" onClick={() => handleMoveBlock(block.id, "down")}>
+                            <Icons.ChevronDown className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => setEditingBlockId(editingBlockId === block.id ? null : block.id)}
+                        >
+                          <Icons.Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => handleDeleteBlock(block.id)}
+                          className="hover:text-destructive"
+                        >
+                          <Icons.Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
 
-                <div className="pointer-events-none">
-                  <BlockRenderer block={block} pageSocialLinks={page.social_links} />
-                </div>
+                    <div className="pointer-events-none">
+                      <BlockRenderer block={block} pageSocialLinks={page.social_links} pageId={page.id} />
+                    </div>
 
-                {editingBlockId === block.id && (
-                  <BlockEditor block={block} onSave={(content) => handleSaveBlock(block.id, content)} onCancel={() => setEditingBlockId(null)} />
-                )}
+                    <AnimatePresence>
+                      {editingBlockId === block.id && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <BlockEditor
+                            block={block}
+                            onSave={(content) => handleSaveBlock(block.id, content)}
+                            onCancel={() => setEditingBlockId(null)}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            )}
+          </AnimatePresence>
 
-        <Button variant="outline" className="mt-4 w-full" onClick={() => setShowAddBlock(true)}>
-          <Icons.Plus className="mr-2 h-4 w-4" />
-          Add Block
-        </Button>
-
-        {showAddBlock && <AddBlockDialog onSelect={handleAddBlock} onClose={() => setShowAddBlock(false)} />}
+          {blocks.length > 0 && (
+            <Button variant="outline" className="mt-4 w-full" onClick={() => setShowAddBlock(true)}>
+              <Icons.Plus className="mr-2 h-4 w-4" />
+              Add Block
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Preview panel */}
-      <div className="w-full bg-muted/30 lg:w-[420px] xl:w-[480px]">
-        <div className="p-4">
-          <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="w-full border-t bg-muted/20 lg:w-[420px] lg:border-t-0 lg:border-l xl:w-[480px]">
+        <div className="flex h-full flex-col">
+          <div className="flex items-center gap-2 border-b px-4 py-2.5 text-xs text-muted-foreground">
             <Icons.Eye className="h-3.5 w-3.5" />
             Live Preview
           </div>
-          <div
-            className="overflow-hidden rounded-xl border shadow-sm"
-            style={{
-              backgroundColor: theme.vars["--bg-primary"],
-              color: theme.vars["--text-primary"],
-              ...Object.fromEntries(Object.entries(theme.vars).map(([k, v]) => [k, v])),
-            } as React.CSSProperties}
-          >
-            <div className="mx-auto max-w-sm px-4 py-8">
-              <div className="mb-4 text-center">
-                <p className="font-bold" style={{ color: theme.vars["--text-primary"] }}>
-                  {page.title}
-                </p>
-              </div>
-              <div className="space-y-3">
-                {blocks.map((block) => (
-                  <div key={block.id}>
-                    <BlockRenderer block={block} pageSocialLinks={page.social_links} />
-                  </div>
-                ))}
+          <div className="flex-1 overflow-y-auto p-4">
+            <div
+              className="mx-auto max-w-sm overflow-hidden rounded-2xl border shadow-sm"
+              style={{
+                backgroundColor: theme.vars["--bg-primary"],
+                color: theme.vars["--text-primary"],
+                ...Object.fromEntries(Object.entries(theme.vars).map(([k, v]) => [k, v])),
+              } as React.CSSProperties}
+            >
+              <div className="px-4 py-8">
+                <div className="mb-4 text-center">
+                  <p className="font-bold font-heading" style={{ color: theme.vars["--text-primary"] }}>
+                    {page.title}
+                  </p>
+                  {page.description && (
+                    <p className="mt-1 text-sm" style={{ color: theme.vars["--text-secondary"] }}>
+                      {page.description}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  {blocks.map((block) => (
+                    <div key={block.id}>
+                      <BlockRenderer block={block} pageSocialLinks={page.social_links} pageId={page.id} />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {showAddBlock && <AddBlockDialog onSelect={handleAddBlock} onClose={() => setShowAddBlock(false)} />}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { X } from "lucide-react";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 type ToastVariant = "default" | "destructive" | "success";
@@ -34,7 +34,7 @@ const toastVariants = cva(
     variants: {
       variant: {
         default: "border bg-background text-foreground",
-        destructive: "destructive group border-destructive bg-destructive text-destructive-foreground",
+        destructive: "border-destructive bg-destructive text-destructive-foreground",
         success: "border-green-500 bg-green-50 text-green-900 dark:bg-green-950 dark:text-green-100",
       },
     },
@@ -76,18 +76,12 @@ function Toaster() {
   return (
     <div className="fixed bottom-0 right-0 z-[100] flex max-h-screen flex-col-reverse gap-2 p-4 md:max-w-[420px]">
       {toasts.map((toast) => (
-        <div
-          key={toast.id}
-          className={cn(toastVariants({ variant: toast.variant }))}
-        >
+        <div key={toast.id} className={cn(toastVariants({ variant: toast.variant }))}>
           <div className="grid gap-1">
             {toast.title && <div className="text-sm font-semibold">{toast.title}</div>}
             {toast.description && <div className="text-sm opacity-90">{toast.description}</div>}
           </div>
-          <button
-            onClick={() => dismissToast(toast.id)}
-            className="opacity-70 hover:opacity-100"
-          >
+          <button onClick={() => dismissToast(toast.id)} className="opacity-70 hover:opacity-100">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -96,27 +90,5 @@ function Toaster() {
   );
 }
 
-// Standalone toast function for one-off toasts
-let globalAddToast: ((toast: Omit<Toast, "id">) => string) | null = null;
-
-export function toast(toast: Omit<Toast, "id">) {
-  if (globalAddToast) {
-    return globalAddToast(toast);
-  }
-  console.warn("Toast not initialized. Wrap your app with ToastProvider.");
-  return "";
-}
-
-function ToastInitializer() {
-  const { addToast } = useToast();
-  React.useEffect(() => {
-    globalAddToast = addToast;
-    return () => {
-      globalAddToast = null;
-    };
-  }, [addToast]);
-  return null;
-}
-
-export { ToastProvider, Toaster, useToast, ToastInitializer };
+export { ToastProvider, Toaster, useToast };
 export type { Toast, ToastVariant };

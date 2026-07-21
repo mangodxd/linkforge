@@ -2,7 +2,6 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 export interface Profile {
   id: string;
-  user_id: string;
   display_name: string | null;
   avatar_url: string | null;
   bio: string | null;
@@ -12,7 +11,6 @@ export interface Profile {
 
 export interface Page {
   id: string;
-  user_id: string;
   title: string;
   slug: string;
   description: string | null;
@@ -31,17 +29,6 @@ export interface Block {
   position: number;
   created_at: string;
   updated_at: string;
-}
-
-export interface Asset {
-  id: string;
-  user_id: string;
-  file_name: string;
-  file_type: string;
-  file_size: number;
-  storage_path: string;
-  public_url: string;
-  created_at: string;
 }
 
 export interface PageView {

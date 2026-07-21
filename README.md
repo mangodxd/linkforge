@@ -2,20 +2,21 @@
 
 A modern, self-hostable, open-source Linktree alternative. Build beautiful link-in-bio pages with a powerful block-based editor — no vendor lock-in, no ads, no tracking.
 
-[![CI](https://github.com/linkforge/linkforge/actions/workflows/ci.yml/badge.svg)](https://github.com/linkforge/linkforge/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](https://opensource.org/licenses/AGPL-3.0)
-[![Next.js](https://img.shields.io/badge/Next.js%2015-black?logo=next.js)](https://nextjs.org)
+[![Next.js](https://img.shields.io/badge/Next.js%2016-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-black?logo=supabase)](https://supabase.com)
 
 ## Features
 
-- **8 Block Types**: Header, Buttons, Text, Images, Gallery, Video, Dividers, Social Links
-- **6 Themes**: Minimal, Dark, Light, Nature, Ocean, Sunset (all powered by design tokens)
-- **Analytics**: Track page views and button clicks — no cookies, no fingerprinting
-- **Self-Hosted**: Run on your own infrastructure with Docker
-- **OAuth & Email Auth**: Google, GitHub, Magic Links, or email/password
-- **Mobile-First**: Responsive design that works on all devices
+- **Block-Based Editor**: 8 block types — Header, Button, Text, Image, Divider, Social Links, Gallery, Video
+- **6 Themes**: Minimal, Dark, Light, Nature, Ocean, Sunset — powered by CSS custom property design tokens
+- **Live Preview**: See changes instantly as you build
+- **Analytics**: Track page views and button clicks — no cookies, no fingerprinting, no third-party scripts
+- **Custom Domains**: Bring your own domain with DNS TXT verification
+- **Self-Hosted**: Full Docker compose stack — Postgres, PostgREST REST API, Kong gateway
+- **No Signup Required**: Open the dashboard and start building immediately
+- **Mobile-First**: Responsive on all devices
 
 ## Quick Start
 
@@ -23,101 +24,139 @@ A modern, self-hostable, open-source Linktree alternative. Build beautiful link-
 git clone https://github.com/linkforge/linkforge.git
 cd linkforge
 pnpm install
+cp .env.example .env.local
+docker compose up -d
 pnpm dev
 ```
 
-Visit `http://localhost:3000` to get started.
+Visit `http://localhost:3000` and start building.
 
-## Setup
+## Local Development
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - pnpm 9+
-- Docker (for local Supabase)
+- Docker Compose v2+
 
-### Local Development
+### Step-by-step
 
-1. Clone and install dependencies:
+1. **Clone and install**:
    ```bash
    git clone https://github.com/linkforge/linkforge.git
    cd linkforge
    pnpm install
    ```
 
-2. Set up Supabase locally:
+2. **Start the local Supabase stack**:
    ```bash
-   supabase init
-   supabase start
+   docker compose up -d
    ```
+   This starts Postgres, PostgREST (REST API), and Kong (API gateway) on `localhost:8000`.
 
-3. Create `.env.local` from `.env.example`:
+3. **Configure environment**:
    ```bash
    cp .env.example .env.local
    ```
 
-4. Run the development server:
+4. **Run migrations** (first time only):
+   Migrations in `supabase/migrations/` are auto-applied on container startup via `docker-entrypoint-initdb.d`. If you need to re-apply:
+   ```bash
+   docker compose exec -T db psql -U postgres -d postgres < supabase/migrations/00001_initial_schema.sql
+   docker compose exec -T db psql -U postgres -d postgres < supabase/migrations/00002_social_links.sql
+   docker compose exec -T db psql -U postgres -d postgres < supabase/migrations/00003_custom_domains.sql
+   docker compose exec -T db psql -U postgres -d postgres < supabase/migrations/00004_remove_auth.sql
+   ```
+
+5. **Start the dev server**:
    ```bash
    pnpm dev
    ```
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
-| `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase API URL | `http://localhost:8000` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | built-in demo key |
+| `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | built-in demo key |
+| `SITE_TITLE` | Site name in meta tags | LinkForge |
+| `SITE_DESCRIPTION` | Site description in meta tags | A modern... |
+| `SITE_DOMAIN` | Canonical domain | localhost:3000 |
+| `MAX_PAGES` | Max pages per user | 50 |
+| `MAX_BLOCKS_PER_PAGE` | Max blocks per page | 20 |
+| `MAX_FILE_SIZE` | Max upload size in MB | 10 |
+| `MAX_SOCIAL_LINKS` | Max social links per page | 10 |
 
 ## Database Schema
 
 ```
-profiles   → User profile data
-pages      → Link-in-bio pages
-blocks     → Page content (JSON)
-assets     → Uploaded media
-page_views → Page view tracking
-click_events → Button click tracking
+profiles       → User profile (display name, bio, avatar)
+pages          → Link-in-bio pages (title, slug, theme, published, social_links)
+blocks         → Block content stored as JSON (header, button, text, image, etc.)
+assets         → Uploaded media files (images, videos)
+page_views     → Page view analytics (referrer, user agent)
+click_events   → Button click analytics (block type, referrer)
+custom_domains → Custom domain mapping with DNS verification status
 ```
 
-All tables use Row Level Security (RLS) for secure multi-tenant access.
+The public page view tracking uses fire-and-forget inserts — no auth required.
 
 ## Architecture
 
 ```
 src/
-  app/          # Next.js App Router
-  components/   # React components
-    blocks/     # Block renderer + editor
-    builder/    # Builder UI
-    dashboard/  # Dashboard layout
-    ui/         # shadcn/ui primitives
+  app/              # Next.js App Router pages and API routes
+  components/
+    blocks/         # Block renderer (public) and editor (builder)
+    builder/        # Builder UI components
+    dashboard/      # Sidebar, page list, row actions
+    ui/             # shadcn/ui primitives
   lib/
-    constants/  # Block types, themes, limits
-    supabase/   # Supabase client helpers
-    tokens/     # Design tokens
-    validations/ # Zod schemas
-  services/     # Business logic layer
-  repositories/ # Data access layer
-  types/        # TypeScript types
+    constants/      # Block types, themes, feature flags, limits
+    tokens/         # CSS custom property design tokens per theme
+    db.ts           # Supabase client factory
+    theme/          # Theme registry (6 themes)
+    utils.ts        # cn(), formatDate(), formatNumber(), etc.
+  services/         # Business logic: pages, blocks, assets, analytics, domains, profiles
+  types/            # TypeScript types
 supabase/
-  migrations/   # SQL migrations
+  migrations/       # SQL migrations (00001-00004)
+  kong.yml          # Kong API gateway declarative config
+docker-compose.yml  # Local Supabase stack
 ```
 
-## Development Scripts
+## Scripts
 
 ```bash
-pnpm dev        # Start dev server
-pnpm build      # Production build
-pnpm lint       # Lint code
-pnpm typecheck  # TypeScript check
-pnpm test       # Run tests
-pnpm format     # Format with Prettier
+pnpm dev          # Start dev server
+pnpm build        # Production build
+pnpm lint         # Lint with ESLint
+pnpm typecheck    # TypeScript check (zero errors)
+pnpm format       # Format with Prettier
+pnpm test         # Run unit tests (Vitest)
+pnpm test:e2e     # Run E2E tests (Playwright)
 ```
 
-## Contributing
+## Deployment
 
-PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+### Docker (recommended)
+
+Build and run with Docker:
+
+```bash
+docker build -t linkforge .
+docker run -p 3000:3000 --env-file .env linkforge
+```
+
+### Manual
+
+```bash
+pnpm build
+pnpm start
+```
+
+Point a reverse proxy (nginx, Caddy) at port 3000. Ensure all env vars point to a production Supabase instance.
 
 ## License
 

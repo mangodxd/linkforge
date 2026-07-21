@@ -82,8 +82,6 @@ export const SOCIAL_PLATFORM_LABELS: Record<SocialPlatform, string> = {
 export const ROUTES = {
   HOME: "/",
   DASHBOARD: "/dashboard",
-  LOGIN: "/login",
-  SIGNUP: "/signup",
   SETTINGS: "/dashboard/settings",
   NEW_PAGE: "/dashboard/pages/new",
   EDIT_PAGE: (id: string) => `/dashboard/pages/${id}/edit`,

@@ -39,10 +39,8 @@ function Dialog({
 
 function DialogTrigger({
   children,
-  asChild,
 }: {
   children: React.ReactNode;
-  asChild?: boolean;
 }) {
   const { onOpenChange } = useDialog();
 
@@ -59,11 +57,6 @@ function DialogContent({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   const { open, onOpenChange } = useDialog();
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
 
   React.useEffect(() => {
     if (!open) return;
@@ -74,7 +67,7 @@ function DialogContent({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [open, onOpenChange]);
 
-  if (!mounted || !open) return null;
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">

@@ -1,28 +1,27 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { createClient } from "@/lib/supabase/client";
+import { createServiceRoleClient } from "@/lib/db";
 import type { Profile } from "@/types";
 
-export async function fetchProfile(userId: string): Promise<Profile | null> {
-  const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
+const db = createServiceRoleClient();
+
+export async function fetchProfile(): Promise<Profile | null> {
+  const { data, error } = await db
     .from("profiles")
     .select("*")
-    .eq("user_id", userId)
+    .limit(1)
     .maybeSingle();
   if (error) throw error;
   return (data as Profile) ?? null;
 }
 
 export async function upsertProfile(
-  userId: string,
   input: { display_name: string | null; bio: string | null; avatar_url: string | null }
 ): Promise<Profile> {
-  const supabase = createClient();
-  const { data, error } = await supabase
+  const existing = await fetchProfile();
+  const { data, error } = await db
     .from("profiles")
     .upsert(
-      { user_id: userId, ...input, updated_at: new Date().toISOString() },
-      { onConflict: "user_id" }
+      { id: existing?.id, ...input, updated_at: new Date().toISOString() },
+      { onConflict: "id" }
     )
     .select("*")
     .single();
