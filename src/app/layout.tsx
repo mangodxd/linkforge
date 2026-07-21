@@ -38,10 +38,42 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "LinkForge — Build your link in bio page",
+  title: {
+    default: "LinkForge — Open source link-in-bio page builder",
+    template: "%s | LinkForge",
+  },
   description:
-    "A modern, self-hostable, open-source Linktree alternative. Build and customize your link in bio page with a powerful block-based editor.",
-  keywords: ["link in bio", "linktree alternative", "open source", "self-hosted", "next.js"],
+    "A modern, self-hosted Linktree alternative. Build beautiful link-in-bio pages with a powerful block editor. Open source, no ads, no tracking, full data control.",
+  keywords: [
+    "link in bio",
+    "linktree alternative",
+    "open source linktree",
+    "self-hosted link in bio",
+    "bio link page",
+    "link page builder",
+    "next.js",
+    "supabase",
+    "social links",
+  ],
+  openGraph: {
+    title: "LinkForge — Open source link-in-bio page builder",
+    description:
+      "A modern, self-hosted Linktree alternative. Build beautiful link-in-bio pages — no ads, no tracking, full data control.",
+    url: "https://github.com/mangodxd/linkforge",
+    siteName: "LinkForge",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LinkForge — Open source link-in-bio page builder",
+    description:
+      "A modern, self-hosted Linktree alternative. Build beautiful link-in-bio pages — no ads, no tracking, full data control.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

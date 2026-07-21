@@ -1,27 +1,48 @@
-# LinkForge OSS
+# LinkForge — Open source link-in-bio page builder
 
-A modern, self-hostable, open-source Linktree alternative. Build beautiful link-in-bio pages with a powerful block-based editor — no vendor lock-in, no ads, no tracking.
+> A modern, self-hosted Linktree alternative. Build beautiful link-in-bio pages with a block editor — no ads, no tracking, no vendor lock-in.
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](https://opensource.org/licenses/AGPL-3.0)
 [![Next.js](https://img.shields.io/badge/Next.js%2016-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-black?logo=supabase)](https://supabase.com)
+[![Docker](https://img.shields.io/badge/Docker-compose-2496ED?logo=docker)](https://docker.com)
+![GitHub stars](https://img.shields.io/github/stars/mangodxd/linkforge?style=social)
+
+**Keywords:** link-in-bio, linktree alternative, self-hosted, open source, page builder, bio link, social links, next.js, supabase, docker
+
+---
+
+## Why LinkForge?
+
+| | LinkForge | Linktree | Bio.link | Campsite |
+|---|---|---|---|---|
+| Self-hosted | ✅ | ❌ | ❌ | ❌ |
+| Open source | ✅ AGPL-3.0 | ❌ | ❌ | ❌ |
+| Your data | ✅ Full control | ❌ Third-party | ❌ Third-party | ❌ Third-party |
+| No ads | ✅ | ❌ | ❌ | ❌ |
+| Custom domains | ✅ | ✅ Paid | ❌ | ❌ |
+| Analytics | ✅ Built-in | ✅ Paid | ❌ | ❌ |
+| Pricing | $0 | Free tier + paid | Free tier + paid | Paid |
+
+---
 
 ## Features
 
-- **Block-Based Editor**: 8 block types — Header, Button, Text, Image, Divider, Social Links, Gallery, Video
-- **6 Themes**: Minimal, Dark, Light, Nature, Ocean, Sunset — powered by CSS custom property design tokens
-- **Live Preview**: See changes instantly as you build
-- **Analytics**: Track page views and button clicks — no cookies, no fingerprinting, no third-party scripts
-- **Custom Domains**: Bring your own domain with DNS TXT verification
-- **Self-Hosted**: Full Docker compose stack — Postgres, PostgREST REST API, Kong gateway
-- **No Signup Required**: Open the dashboard and start building immediately
-- **Mobile-First**: Responsive on all devices
+- **Block editor** — 8 block types: Header, Button, Text, Image, Divider, Social Links, Gallery, Video
+- **6 themes** — Minimal, Dark, Light, Nature, Ocean, Sunset. CSS custom property tokens
+- **Live preview** — See changes instantly as you build
+- **Analytics** — Page views, button clicks, referrers. No cookies, no third-party scripts
+- **Custom domains** — Bring your own domain with DNS TXT verification
+- **No signup required** — Open the dashboard and start building immediately
+- **Mobile-first** — Responsive on every device
 
-## Quick Start
+---
+
+## Quick start
 
 ```bash
-git clone https://github.com/linkforge/linkforge.git
+git clone https://github.com/mangodxd/linkforge.git
 cd linkforge
 pnpm install
 cp .env.example .env.local
@@ -29,9 +50,24 @@ docker compose up -d
 pnpm dev
 ```
 
-Visit `http://localhost:3000` and start building.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Local Development
+---
+
+## Tech stack
+
+| Layer | Stack |
+|-------|-------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript 5 |
+| UI | Tailwind CSS v4, Framer Motion, shadcn/ui |
+| Database | PostgreSQL 15 |
+| API | PostgREST, Kong gateway |
+| Fonts | Fira Code + Fira Sans, Poppins + Open Sans |
+
+---
+
+## Local development
 
 ### Prerequisites
 
@@ -41,26 +77,23 @@ Visit `http://localhost:3000` and start building.
 
 ### Step-by-step
 
-1. **Clone and install**:
+1. **Install dependencies**
    ```bash
-   git clone https://github.com/linkforge/linkforge.git
-   cd linkforge
    pnpm install
    ```
 
-2. **Start the local Supabase stack**:
+2. **Start backend**
    ```bash
    docker compose up -d
    ```
-   This starts Postgres, PostgREST (REST API), and Kong (API gateway) on `localhost:8000`.
+   Starts Postgres, PostgREST, and Kong on `localhost:8000`.
 
-3. **Configure environment**:
+3. **Configure env**
    ```bash
    cp .env.example .env.local
    ```
 
-4. **Run migrations** (first time only):
-   Migrations in `supabase/migrations/` are auto-applied on container startup via `docker-entrypoint-initdb.d`. If you need to re-apply:
+4. **Run migrations**
    ```bash
    docker compose exec -T db psql -U postgres -d postgres < supabase/migrations/00001_initial_schema.sql
    docker compose exec -T db psql -U postgres -d postgres < supabase/migrations/00002_social_links.sql
@@ -68,12 +101,12 @@ Visit `http://localhost:3000` and start building.
    docker compose exec -T db psql -U postgres -d postgres < supabase/migrations/00004_remove_auth.sql
    ```
 
-5. **Start the dev server**:
+5. **Start dev server**
    ```bash
    pnpm dev
    ```
 
-### Environment Variables
+### Environment variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -81,68 +114,51 @@ Visit `http://localhost:3000` and start building.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key | built-in demo key |
 | `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | built-in demo key |
 | `SITE_TITLE` | Site name in meta tags | LinkForge |
-| `SITE_DESCRIPTION` | Site description in meta tags | A modern... |
 | `SITE_DOMAIN` | Canonical domain | localhost:3000 |
-| `MAX_PAGES` | Max pages per user | 50 |
-| `MAX_BLOCKS_PER_PAGE` | Max blocks per page | 20 |
-| `MAX_FILE_SIZE` | Max upload size in MB | 10 |
-| `MAX_SOCIAL_LINKS` | Max social links per page | 10 |
 
-## Database Schema
+---
 
-```
-profiles       → User profile (display name, bio, avatar)
-pages          → Link-in-bio pages (title, slug, theme, published, social_links)
-blocks         → Block content stored as JSON (header, button, text, image, etc.)
-assets         → Uploaded media files (images, videos)
-page_views     → Page view analytics (referrer, user agent)
-click_events   → Button click analytics (block type, referrer)
-custom_domains → Custom domain mapping with DNS verification status
-```
-
-The public page view tracking uses fire-and-forget inserts — no auth required.
-
-## Architecture
+## Project structure
 
 ```
 src/
-  app/              # Next.js App Router pages and API routes
+  app/              # Next.js App Router pages + API routes
   components/
-    blocks/         # Block renderer (public) and editor (builder)
-    builder/        # Builder UI components
-    dashboard/      # Sidebar, page list, row actions
+    blocks/         # Public block renderer + builder editor
+    dashboard/      # Sidebar, page list, dashboard overview
+    landing/        # Marketing page sections
     ui/             # shadcn/ui primitives
   lib/
-    constants/      # Block types, themes, feature flags, limits
-    tokens/         # CSS custom property design tokens per theme
-    db.ts           # Supabase client factory
-    theme/          # Theme registry (6 themes)
-    utils.ts        # cn(), formatDate(), formatNumber(), etc.
-  services/         # Business logic: pages, blocks, assets, analytics, domains, profiles
-  types/            # TypeScript types
+    constants/      # Block types, themes, limits
+    db.ts           # Supabase client
+    theme/          # 6 theme definitions with CSS tokens
+    utils.ts        # cn(), formatDate(), formatNumber()
+  services/         # Business logic layer
 supabase/
-  migrations/       # SQL migrations (00001-00004)
-  kong.yml          # Kong API gateway declarative config
-docker-compose.yml  # Local Supabase stack
+  migrations/       # 00001–00004
+  kong.yml          # Kong API gateway config
+docker-compose.yml  # DB + REST API + gateway
 ```
+
+---
 
 ## Scripts
 
 ```bash
 pnpm dev          # Start dev server
 pnpm build        # Production build
-pnpm lint         # Lint with ESLint
-pnpm typecheck    # TypeScript check (zero errors)
-pnpm format       # Format with Prettier
-pnpm test         # Run unit tests (Vitest)
-pnpm test:e2e     # Run E2E tests (Playwright)
+pnpm lint         # ESLint
+pnpm typecheck    # TypeScript (zero errors)
+pnpm format       # Prettier
+pnpm test         # Vitest
+pnpm test:e2e     # Playwright
 ```
+
+---
 
 ## Deployment
 
-### Docker (recommended)
-
-Build and run with Docker:
+### Docker
 
 ```bash
 docker build -t linkforge .
@@ -156,7 +172,9 @@ pnpm build
 pnpm start
 ```
 
-Point a reverse proxy (nginx, Caddy) at port 3000. Ensure all env vars point to a production Supabase instance.
+Point a reverse proxy (nginx, Caddy) at port 3000.
+
+---
 
 ## License
 
